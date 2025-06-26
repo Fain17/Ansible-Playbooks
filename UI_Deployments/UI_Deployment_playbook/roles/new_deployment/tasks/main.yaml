@@ -1,0 +1,65 @@
+---
+
+- name: Archive the build directory
+  ansible.builtin.command:
+      cmd: "tar -czf {{archive_file}} -C {{ build_dir }} ."
+  delegate_to: localhost
+
+- name: Copy file with owner and permission
+  ansible.builtin.copy:
+    src   : "{{archive_file}}"
+    dest  : "{{remote_dir}}"
+    owner : "{{user_name}}"
+    group : "{{user_name}}"
+    mode  : '0644' 
+
+- name: Finding .tar.gz found_files
+  ansible.builtin.find:
+    paths: "{{ remote_dir }}"
+    patterns: '*.tar.gz'
+  register: found_files
+
+- name: Debugging the .tar.gz file
+  ansible.builtin.debug:
+    var: found_files
+
+- name: Unarchive the directory on the remote server
+  ansible.builtin.unarchive:
+    src: "{{ item.path }}"
+    dest: "{{ remote_dir }}"
+    owner: "{{user_name}}"
+    group: "{{user_name}}"
+    mode: '0755'
+    remote_src: yes
+  with_items: "{{ found_files.files }}"
+
+- name: Clean up the archive on the remote server
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent 
+  with_items: "{{ found_files.files }}" 
+
+- name: Ensure the Nginx configuration directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d
+    state: directory
+
+- name: Remove .conf extension from nginx config filename
+  set_fact:
+    nginx_conf_base_name: "{{ nginx_conf_file | regex_replace('\\.conf$', '') }}"
+  
+- name: Deploy the Nginx configuration file
+  become: true
+  become_user: root
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "{{ nginx_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload nginx to apply new configuration
+  ansible.builtin.shell:
+    cmd: echo {{ansible_sudo_pass}} | sudo -S nginx -s reload
+
+  

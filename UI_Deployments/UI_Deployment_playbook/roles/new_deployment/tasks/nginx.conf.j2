@@ -1,0 +1,12 @@
+server {
+    listen 80;
+    server_name {{ server_name }};  # Replace with your domain
+
+    root /home/{{user_name}}/{{ nginx_conf_base_name }};  # Replace with the path to your built React app
+
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
