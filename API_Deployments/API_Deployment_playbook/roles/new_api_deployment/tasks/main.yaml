@@ -1,0 +1,118 @@
+---
+- name: Archive the build directory
+  ansible.builtin.command:
+    cmd: "tar -czf {{archive_file}} -C {{ build_dir }} ."
+  delegate_to: localhost
+
+- name: Copy file with owner and permission
+  become: true
+  become_user: deploy
+  ansible.builtin.copy:
+    src   : "{{archive_file}}"
+    dest  : "{{remote_dir}}"
+    owner : deploy
+    group : deploy
+    mode  : '0644' 
+  
+
+- name: Finding .tar.gz found_files
+  become: true
+  become_user: deploy
+  ansible.builtin.find:
+    paths: "{{ remote_dir }}"
+    patterns: '*.tar.gz'
+  register: found_files
+
+- name: Debugging the .tar.gz file
+  ansible.builtin.debug:
+    var: found_files
+
+- name: Unarchive the directory on the remote server
+  become: true
+  become_user: deploy
+  ansible.builtin.unarchive:
+    src: "{{ item.path }}"
+    dest: "{{ remote_dir }}"
+    owner: deploy
+    group: deploy
+    remote_src: yes
+  with_items: "{{ found_files.files }}"
+  
+
+- name: Clean up the archive on the remote server
+  become: true
+  become_user: deploy 
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent 
+  with_items: "{{ found_files.files }}"
+
+- name: Edit the Supervisor configuration file
+  become: true
+  become_user: root
+  ansible.builtin.template:
+    src: supervisord.conf.j2
+    dest: "{{ supervisor_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  
+- name: Update the process group in supervisord
+  ansible.builtin.shell:
+    cmd: echo "{{ansible_sudo_pass}}" | sudo -S supervisorctl update
+
+- name: Backup the nginx configuration file
+  become: true
+  become_user: root
+  ansible.builtin.copy:
+    src: /etc/nginx/conf.d/LUCIDLinuxAPIs.conf
+    dest: /etc/nginx/conf.d/LUCIDLinuxAPIs.backup
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Edit the nginx configuration file
+  become: true
+  become_user: root
+  ansible.builtin.shell: |
+    awk '{
+      buffer[NR] = $0
+      if (/^[[:space:]]*}$/) {
+        last_bracket = NR
+        found = 1
+      }
+    } END {
+      if (found) {
+        # Print all lines except the last closing bracket
+        for (i = 1; i < last_bracket; i++) {
+          print buffer[i]
+        }
+        # Print the new configuration snippet
+        print "    location /api/{{ api_name }}/ {"
+        print "        rewrite ^/api/{{ api_name }}/(.*)$ /$1 break;"
+        print "        proxy_pass http://127.0.0.1:{{ port_value }};"
+        print "        proxy_set_header Host $host;"
+        print "        proxy_set_header X-Real-IP $remote_addr;"
+        print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
+        print "        proxy_set_header X-Forwarded-Proto $scheme;"
+        print "        proxy_connect_timeout 60s;"
+        print "        proxy_send_timeout 60s;"
+        print "        proxy_read_timeout 60s;"
+        print "        send_timeout 60s;"
+        print "        proxy_buffering on;"
+        print "        proxy_buffers 8 16k;"
+        print "        proxy_buffer_size 32k;"
+        print "        proxy_max_temp_file_size 0;"
+        print "        proxy_http_version 1.1;"
+        print "        proxy_request_buffering off;"
+        print "    }"
+        # Print the final closing bracket
+        print "}"
+      }
+
+    }' /etc/nginx/conf.d/LUCIDLinuxAPIs.conf > /etc/nginx/conf.d/LUCIDLinuxAPIs.tmp && mv /etc/nginx/conf.d/LUCIDLinuxAPIs.tmp /etc/nginx/conf.d/LUCIDLinuxAPIs.conf
+  
+- name: Reload nginx 
+  ansible.builtin.shell:
+    cmd: echo "{{ansible_sudo_pass}}" | sudo -S nginx -s reload

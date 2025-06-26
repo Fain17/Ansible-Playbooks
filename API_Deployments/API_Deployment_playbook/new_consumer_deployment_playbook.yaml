@@ -1,0 +1,25 @@
+---
+
+#Set the parameters before running the script. Make sure the api name and the port entered are free.Also do not forget to 
+#set the directory
+
+- name        :   New API Deployment playbook
+  hosts       :   api_server
+  remote_user :   deploy
+  
+  roles : 
+    - new_consumer_api_deployment
+  vars  :
+    build_dir             : "../Deployments/Builds"
+    archive_file          : "../Deployments/Builds.tar.gz"
+    remote_dir            : "/home/deploy/APIS"
+
+    #Enter the valid API name  
+    api_name              : "" 
+    supervisor_conf_path  : "/etc/supervisor/conf.d/{{ api_name }}.conf" #Do not change this line
+
+    #Enter the port for the API to be hosted on after referring to the hosted ports
+    port_value            : "" 
+
+  vars_files:
+    - roles/sudo_pass.yaml

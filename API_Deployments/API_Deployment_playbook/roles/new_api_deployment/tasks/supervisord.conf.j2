@@ -1,0 +1,10 @@
+[program:{{ api_name }}]
+command=/usr/bin/dotnet  {{ api_name }}.dll
+directory={{ remote_dir }}/{{ api_name }}
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/APILogs/{{ api_name }}.err.log
+stdout_logfile=/var/log/APILogs/{{ api_name }}.out.log
+environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://*:{{ port_value }}/"
+user=deploy
+stopsignal=INT
