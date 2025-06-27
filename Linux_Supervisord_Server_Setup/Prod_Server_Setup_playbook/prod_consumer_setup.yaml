@@ -1,0 +1,27 @@
+---
+
+- name: Prod Consumer server configuration
+  hosts: consumer-api-server
+  remote_user : ubuntu
+  
+  roles : 
+    - consumer_setup
+  
+  
+  vars:
+    new_user: "lucidapis"                 #Specify user name
+    new_user_password: "lucid@123"    #Specify password
+    
+    
+    supervisor_username: "<your_server>"
+    supervisor_password: "<your_password>"
+    
+    
+    supervisor_conf_path: /etc/supervisor/supervisord.conf
+    authorized_keys_src: "/home/ubuntu/.ssh/authorized_keys"
+    
+    
+    directories:
+      - apis
+      - api_logs
+      - api_log_backups
