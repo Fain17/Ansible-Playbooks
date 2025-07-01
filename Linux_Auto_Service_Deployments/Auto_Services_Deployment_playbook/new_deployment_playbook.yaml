@@ -1,0 +1,24 @@
+---
+
+#Set the parameters before running the script. Make sure the api name and the port entered are free.Also do not forget to 
+#set the directory
+
+- name        :   New Autoservice Deployment playbook
+  hosts       :   api_server
+  remote_user :   ubuntu
+  
+  roles : 
+    - new_service_deployment
+  vars  :
+    build_dir             : "../Deployments/Builds"
+    archive_file          : "../Deployments/Builds.tar.gz"
+    remote_dir            : "/home/auto_service/Services"
+  
+    service_name          : ""            # Change service name accordingly
+    service_conf_path     : "/opt/Services/{{ service_name }}.service" #Do not change this line
+    
+    #Memory limit in mb (recommended at least 100)
+    memory_limit : 100 
+
+  vars_files:
+    - roles/sudo_pass.yaml

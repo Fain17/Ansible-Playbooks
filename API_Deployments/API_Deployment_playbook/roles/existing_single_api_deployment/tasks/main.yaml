@@ -1,0 +1,50 @@
+---
+- name: Archive the build directory
+  ansible.builtin.command:
+    cmd: "tar -czf {{archive_file}} -C {{ build_dir }} ."
+  delegate_to: localhost
+
+- name: Copy file with owner and permission
+  become: true
+  become_user: deploy
+  ansible.builtin.copy:
+    src   : "{{archive_file}}"
+    dest  : "{{remote_dir}}"
+    owner : deploy
+    group : deploy
+    mode  : '0644' 
+  
+
+- name: Finding .tar.gz found_files
+  become: true
+  become_user: deploy
+  ansible.builtin.find:
+    paths: "{{ remote_dir }}"
+    patterns: '*.tar.gz'
+  register: found_files
+
+- name: Debugging the .tar.gz file
+  ansible.builtin.debug:
+    var: found_files
+
+- name: Unarchive the directory on the remote server
+  become: true
+  become_user: deploy
+  ansible.builtin.unarchive:
+    src: "{{ item.path }}"
+    dest: "{{ remote_dir }}"
+    owner: deploy
+    group: deploy
+    mode: '0755'
+    remote_src: yes
+  with_items: "{{ found_files.files }}"
+  
+
+- name: Clean up the archive on the remote server
+  become: true
+  become_user: deploy 
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent 
+  with_items: "{{ found_files.files }}"
+  

@@ -1,0 +1,20 @@
+---
+
+- name: Prod Consumer server configuration
+  hosts: ui-server
+  remote_user : ubuntu
+  
+  roles : 
+    - ui_setup
+  
+  
+  vars:
+    new_user: "<your_user>"                 #Specify user name
+    new_user_password: "<your_password>"    #Specify password
+    
+
+    authorized_keys_src: "/home/ubuntu/.ssh/authorized_keys"
+    
+    
+    directories:
+      - uis

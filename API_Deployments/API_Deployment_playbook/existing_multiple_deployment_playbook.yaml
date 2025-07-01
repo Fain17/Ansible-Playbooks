@@ -1,0 +1,16 @@
+---
+#Multiple Deployment is only possible if both the Projects are from the same directory. If not host them using existing_single_api_deployment
+#This script will restart all the apis
+
+- name        :   Existing API Deployment playbook
+  hosts       :   api_server
+  remote_user :   ec2-user
+  
+  roles : 
+    - existing_multiple_api_deployment
+  vars  :
+    build_dir     : "../Deployments/Builds"
+    archive_file  : "../Deployments/Builds.tar.gz"
+    remote_dir    : "/home/deploy/APIs"    
+
+ 

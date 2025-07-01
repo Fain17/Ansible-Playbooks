@@ -1,0 +1,14 @@
+---
+#After hosting the script dont forget to restart the instance on  supervisord gui page, and dont forget to set the path below
+
+- name        :   Existing API Deployment playbook
+  hosts       :   api_server
+  remote_user :   ec2-user
+  
+  roles : 
+    - existing_single_api_deployment
+  vars  :
+    build_dir     : "../Deployments/Builds"
+    archive_file  : "../Deployments/Builds.tar.gz"
+    remote_dir    : "/home/deploy/APIs"  
+

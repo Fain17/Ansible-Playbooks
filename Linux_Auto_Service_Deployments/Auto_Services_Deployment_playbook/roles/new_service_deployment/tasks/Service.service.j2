@@ -1,0 +1,28 @@
+[Unit]
+Description={{service_name}}
+After=network.target
+
+[Service]
+Type=exec
+
+User=auto_service
+Group=auto_service
+
+WorkingDirectory=/home/auto_service/Services/{{service_name}}
+
+ExecStart=/usr/bin/dotnet {{service_name}}.dll
+
+Restart=on-failure 
+RestartSec=5s
+StartLimitInterval=60s
+StartLimitBurst=3  
+# Resource limits (optional)
+MemoryLimit={{memory_limit}}M 
+
+Environment=ASPNETCORE_ENVIRONMENT=Development
+
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target  

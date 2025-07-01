@@ -1,0 +1,15 @@
+---
+
+- name        :   Existing UI Deployment playbook
+  hosts       :   ui_server
+  remote_user :   frontend
+  
+  roles : 
+    - existing_deployment
+  vars  :
+    build_dir       : "../Deployments/Builds"
+    archive_file    : "../Deployments/Builds.tar.gz"
+    remote_dir    : "/home/frontend"
+
+  vars_files:
+    - roles/sudo_pass.yaml

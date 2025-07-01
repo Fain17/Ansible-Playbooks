@@ -1,0 +1,21 @@
+---
+
+#Set the parameters before running the script. Make sure the api name and the port entered are free.Also do not forget to 
+#set the directory
+
+- name        :   Existing Autoservice Deployment playbook
+  hosts       :   api_server
+  remote_user :   ubuntu
+  
+  roles : 
+    - existing_service_update
+  vars  :
+    build_dir             : "../Deployments/Builds"
+    archive_file          : "../Deployments/Builds.tar.gz"
+    remote_dir            : "/home/auto_service/Services"
+    
+  
+    service_name          : ""            # Change service name accordingly
+ 
+  vars_files:
+    - roles/sudo_pass.yaml

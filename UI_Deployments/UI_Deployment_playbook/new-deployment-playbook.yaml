@@ -1,0 +1,23 @@
+---
+
+- name        :   New UI Deployment playbook
+  hosts       :   ui_server
+  remote_user :   <your_rmeote_username>
+  
+  roles:
+    - new_deployment
+  vars:
+      user_name       : "<your_remote_username>"
+      build_dir       : "../Deployments/Builds"
+      archive_file    : "../Deployments/Builds.tar.gz"
+      
+      remote_dir      : "/home/{{user_name}}"
+      
+      
+      server_name     : "<your_domain_name>.com"              # Replace with your domain
+      nginx_conf_file : "<your_filename>.conf "              #Replace with exact name as buildfile
+      
+      nginx_conf_path : "/etc/nginx/conf.d/{{nginx_conf_file}}"
+
+  vars_files:
+    - roles/sudo_pass.yaml

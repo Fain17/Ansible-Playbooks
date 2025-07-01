@@ -1,0 +1,74 @@
+---
+- name: Archive the build directory
+  ansible.builtin.command:
+    cmd: "tar -czf {{archive_file}} -C {{ build_dir }} ."
+  delegate_to: localhost
+
+- name: Copy file with owner and permission
+  become: true
+  become_user: auto_service
+  ansible.builtin.copy:
+    src   : "{{archive_file}}"
+    dest  : "{{remote_dir}}"
+    owner : auto_service
+    group : auto_service
+  
+
+- name: Finding .tar.gz found_files
+  become: true
+  become_user: auto_service
+  ansible.builtin.find:
+    paths: "{{ remote_dir }}"
+    patterns: '*.tar.gz'
+  register: found_files
+
+- name: Debugging the .tar.gz file
+  ansible.builtin.debug:
+    var: found_files
+
+- name: Unarchive the directory on the remote server
+  become: true
+  become_user: auto_service
+  ansible.builtin.unarchive:
+    src: "{{ item.path }}"
+    dest: "{{ remote_dir }}"
+    owner: auto_service
+    group: auto_service
+    remote_src: yes
+  with_items: "{{ found_files.files }}"
+  
+
+- name: Clean up the archive on the remote server
+  become: true
+  become_user: auto_service 
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent 
+  with_items: "{{ found_files.files }}"
+
+- name: Edit the Service configuration file
+  become: true
+  become_user: root
+  ansible.builtin.template:
+    src: Service.service.j2
+    dest: "{{ service_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  
+- name: Update the process group in supervisord
+  ansible.builtin.shell:
+    cmd: echo "{{ansible_sudo_pass}}" | sudo -S ln -s /opt/Services/{{service_name}}.service /etc/systemd/system/{{service_name}}.service
+
+- name: Reload systemd, start service, and show status
+  become : true
+  become_user : ubuntu
+  shell: |
+    echo "{{ansible_sudo_pass}}" | sudo -S systemctl daemon-reload &&
+    echo "{{ansible_sudo_pass}}" | sudo -S systemctl start {{service_name}}.service &&
+    echo "{{ansible_sudo_pass}}" | sudo -S systemctl status {{service_name}}.service --no-pager
+  register: service_status_output
+
+- name: Display service status
+  debug:
+    msg: "{{ service_status_output.stdout }}"

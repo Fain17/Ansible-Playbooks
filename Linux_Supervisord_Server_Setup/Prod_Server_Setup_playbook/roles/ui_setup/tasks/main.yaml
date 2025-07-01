@@ -1,0 +1,56 @@
+---
+- name: Set the system time and date
+  command: sudo timedatectl set-timezone 'Asia/Kolkata'
+
+- name: Install Nginx
+  become: true
+  become_user: root
+  apt:
+    name: nginx
+    state: present
+  
+- name: Create a new user
+  become: true
+  become_user: root
+  user:
+    name: "{{ new_user }}"
+    shell: /bin/bash
+    password: "{{ new_user_password | password_hash('sha512') }}"
+    create_home: yes
+
+- name: Create .ssh directory for new user
+  become: true
+  become_user: root
+  file:
+    path: "/home/{{ new_user }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ new_user }}"
+    group: "{{ new_user }}"
+
+- name: Copy authorized_keys file to new user
+  become: true
+  become_user: root
+  copy:
+    src: "{{ authorized_keys_src }}"
+    dest: "/home/{{ new_user }}/.ssh/authorized_keys"
+    remote_src: yes
+    mode: '0400'
+    owner: "{{ new_user }}"
+    group: "{{ new_user }}"
+
+- name: Create required directories
+  become: true
+  become_user: root
+  file:
+    path: "/home/{{ new_user }}/{{ item }}"
+    state: directory
+    owner: "{{ new_user }}"
+    group: "{{ new_user }}"
+  loop: "{{ directories }}"
+
+- name: Adding the new user to the sudo group
+  become: true
+  become_user: root
+  ansible.builtin.shell:
+    cmd: usermod -aG sudo {{ new_user }}
